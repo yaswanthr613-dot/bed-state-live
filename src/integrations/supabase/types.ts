@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      rooms: {
+        Row: {
+          col_idx: number
+          id: string
+          label: string
+          room_type: Database["public"]["Enums"]["room_type"]
+          row_idx: number
+          status: Database["public"]["Enums"]["room_status"]
+          updated_at: string
+        }
+        Insert: {
+          col_idx: number
+          id?: string
+          label: string
+          room_type: Database["public"]["Enums"]["room_type"]
+          row_idx: number
+          status?: Database["public"]["Enums"]["room_status"]
+          updated_at?: string
+        }
+        Update: {
+          col_idx?: number
+          id?: string
+          label?: string
+          room_type?: Database["public"]["Enums"]["room_type"]
+          row_idx?: number
+          status?: Database["public"]["Enums"]["room_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +52,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      room_status: "available" | "reserved" | "occupied"
+      room_type: "ICU" | "ER" | "WARD"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +180,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      room_status: ["available", "reserved", "occupied"],
+      room_type: ["ICU", "ER", "WARD"],
+    },
   },
 } as const
