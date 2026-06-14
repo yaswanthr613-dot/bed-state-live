@@ -14,32 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
-      rooms: {
+      hospital_beds: {
         Row: {
-          col_idx: number
+          bed_number: number
+          bed_type: Database["public"]["Enums"]["bed_type"]
+          hospital_name: string
           id: string
-          label: string
-          room_type: Database["public"]["Enums"]["room_type"]
-          row_idx: number
-          status: Database["public"]["Enums"]["room_status"]
+          place_id: string
+          reserved_at: string | null
+          reserved_by: string | null
+          status: Database["public"]["Enums"]["bed_status"]
           updated_at: string
         }
         Insert: {
-          col_idx: number
+          bed_number: number
+          bed_type: Database["public"]["Enums"]["bed_type"]
+          hospital_name: string
           id?: string
-          label: string
-          room_type: Database["public"]["Enums"]["room_type"]
-          row_idx: number
-          status?: Database["public"]["Enums"]["room_status"]
+          place_id: string
+          reserved_at?: string | null
+          reserved_by?: string | null
+          status?: Database["public"]["Enums"]["bed_status"]
           updated_at?: string
         }
         Update: {
-          col_idx?: number
+          bed_number?: number
+          bed_type?: Database["public"]["Enums"]["bed_type"]
+          hospital_name?: string
           id?: string
-          label?: string
-          room_type?: Database["public"]["Enums"]["room_type"]
-          row_idx?: number
-          status?: Database["public"]["Enums"]["room_status"]
+          place_id?: string
+          reserved_at?: string | null
+          reserved_by?: string | null
+          status?: Database["public"]["Enums"]["bed_status"]
           updated_at?: string
         }
         Relationships: []
@@ -49,11 +55,50 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      release_my_bed: {
+        Args: { _device_id: string }
+        Returns: {
+          bed_number: number
+          bed_type: Database["public"]["Enums"]["bed_type"]
+          hospital_name: string
+          id: string
+          place_id: string
+          reserved_at: string | null
+          reserved_by: string | null
+          status: Database["public"]["Enums"]["bed_status"]
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "hospital_beds"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      reserve_bed: {
+        Args: { _bed_id: string; _device_id: string }
+        Returns: {
+          bed_number: number
+          bed_type: Database["public"]["Enums"]["bed_type"]
+          hospital_name: string
+          id: string
+          place_id: string
+          reserved_at: string | null
+          reserved_by: string | null
+          status: Database["public"]["Enums"]["bed_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "hospital_beds"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
-      room_status: "available" | "reserved" | "occupied"
-      room_type: "ICU" | "ER" | "WARD"
+      bed_status: "available" | "reserved" | "occupied"
+      bed_type: "ICU" | "ER" | "WARD"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -181,8 +226,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      room_status: ["available", "reserved", "occupied"],
-      room_type: ["ICU", "ER", "WARD"],
+      bed_status: ["available", "reserved", "occupied"],
+      bed_type: ["ICU", "ER", "WARD"],
     },
   },
 } as const

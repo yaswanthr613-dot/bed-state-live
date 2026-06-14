@@ -122,3 +122,124 @@ export const geocodeAddress = createServerFn({ method: "POST" })
       lng: r.geometry.location.lng,
     };
   });
+
+// ---------- Hospital beds ----------
+
+export interface Bed {
+  id: string;
+  place_id: string;
+  hospital_name: string;
+  bed_number: number;
+  bed_type: "ICU" | "ER" | "WARD";
+  status: "available" | "reserved" | "occupied";
+  reserved_by: string | null;
+}
+
+function hashStr(s: string, seed = 0): number {
+  let h = seed;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function bedSeed(placeId: string, bedNum: number, totalBeds: number) {
+  const h1 = hashStr(placeId + ":t:" + bedNum);
+  const h2 = hashStr(placeId + ":s:" + bedNum);
+  // Type distribution: ~10% ICU, ~20% ER, ~70% Ward.
+  // Place ICU first, then ER, then Ward so the grid reads naturally.
+  const icuCount = Math.max(1, Math.round(totalBeds * 0.1));
+  const erCount = Math.max(1, Math.round(totalBeds * 0.2));
+  let type: Bed["bed_type"];
+  if (bedNum <= icuCount) type = "ICU";
+  else if (bedNum <= icuCount + erCount) type = "ER";
+  else type = "WARD";
+  // Realistic occupancy: ICU ~85% occupied, ER ~70%, Ward ~60%.
+  const occThreshold = type === "ICU" ? 85 : type === "ER" ? 70 : 60;
+  const status: Bed["status"] = h2 % 100 < occThreshold ? "occupied" : "available";
+  return { type, status, _h: h1 };
+}
+
+export const ensureHospitalBeds = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        placeId: z.string().min(1),
+        hospitalName: z.string().min(1),
+        totalBeds: z.number().int().min(1).max(500),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }): Promise<Bed[]> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: existing, error: selErr } = await supabaseAdmin
+      .from("hospital_beds")
+      .select("*")
+      .eq("place_id", data.placeId)
+      .order("bed_number");
+    if (selErr) throw new Error(selErr.message);
+
+    if ((existing?.length ?? 0) >= data.totalBeds) {
+      return existing as Bed[];
+    }
+
+    const have = new Set((existing ?? []).map((b) => b.bed_number));
+    const toInsert: Array<{
+      place_id: string;
+      hospital_name: string;
+      bed_number: number;
+      bed_type: Bed["bed_type"];
+      status: Bed["status"];
+    }> = [];
+    for (let i = 1; i <= data.totalBeds; i++) {
+      if (have.has(i)) continue;
+      const seed = bedSeed(data.placeId, i, data.totalBeds);
+      toInsert.push({
+        place_id: data.placeId,
+        hospital_name: data.hospitalName,
+        bed_number: i,
+        bed_type: seed.type,
+        status: seed.status,
+      });
+    }
+
+    if (toInsert.length > 0) {
+      const { error: insErr } = await supabaseAdmin.from("hospital_beds").insert(toInsert);
+      if (insErr) throw new Error(insErr.message);
+    }
+
+    const { data: full, error: finalErr } = await supabaseAdmin
+      .from("hospital_beds")
+      .select("*")
+      .eq("place_id", data.placeId)
+      .order("bed_number");
+    if (finalErr) throw new Error(finalErr.message);
+    return (full ?? []) as Bed[];
+  });
+
+export const reserveBed = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z.object({ bedId: z.string().uuid(), deviceId: z.string().min(8).max(64) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin.rpc("reserve_bed", {
+      _bed_id: data.bedId,
+      _device_id: data.deviceId,
+    });
+    if (error) {
+      if (error.message.includes("bed_unavailable")) {
+        return { ok: false as const, reason: "unavailable" as const };
+      }
+      throw new Error(error.message);
+    }
+    return { ok: true as const, bed: row as Bed };
+  });
+
+export const releaseMyBed = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ deviceId: z.string().min(8).max(64) }).parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.rpc("release_my_bed", { _device_id: data.deviceId });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
