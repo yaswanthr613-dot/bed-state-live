@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Activity, AlertTriangle, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { HospitalFinder } from "@/components/HospitalFinder";
 
 export const Route = createFileRoute("/")({
   head: () => ({
