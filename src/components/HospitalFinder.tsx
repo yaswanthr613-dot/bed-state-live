@@ -1,5 +1,5 @@
 /// <reference types="google.maps" />
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   searchNearbyHospitals,
@@ -11,9 +11,15 @@ import { useGoogleMaps } from "@/lib/use-google-maps";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
-import { Crosshair, Hospital as HospitalIcon, MapPin, Search, Star, BedDouble } from "lucide-react";
+import {
+  BedDouble,
+  Crosshair,
+  Hospital as HospitalIcon,
+  MapPin,
+  Search,
+  Star,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const HOSPITAL_TYPE_LABELS: Record<string, string> = {
@@ -34,7 +40,12 @@ function prettyTypes(types: string[]): string[] {
   return filtered.slice(0, 3).map((t) => HOSPITAL_TYPE_LABELS[t] ?? t.replace(/_/g, " "));
 }
 
-export function HospitalFinder() {
+interface Props {
+  selectedId: string | null;
+  onSelect: (h: NearbyHospital | null) => void;
+}
+
+export function HospitalFinder({ selectedId, onSelect }: Props) {
   const { ready: mapsReady, error: mapsError } = useGoogleMaps();
   const search = useServerFn(searchNearbyHospitals);
   const geocode = useServerFn(geocodeAddress);
@@ -43,7 +54,6 @@ export function HospitalFinder() {
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [centerLabel, setCenterLabel] = useState<string>("");
   const [hospitals, setHospitals] = useState<NearbyHospital[]>([]);
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
 
   const mapEl = useRef<HTMLDivElement>(null);
@@ -51,7 +61,6 @@ export function HospitalFinder() {
   const markersRef = useRef<google.maps.Marker[]>([]);
   const centerMarkerRef = useRef<google.maps.Marker | null>(null);
 
-  // Init map once
   useEffect(() => {
     if (!mapsReady || !mapEl.current || mapRef.current) return;
     mapRef.current = new google.maps.Map(mapEl.current, {
@@ -69,29 +78,30 @@ export function HospitalFinder() {
     });
   }, [mapsReady]);
 
-  // Sync markers
   useEffect(() => {
     if (!mapRef.current) return;
     markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = hospitals.map(
-      (h) =>
-        new google.maps.Marker({
-          position: { lat: h.lat, lng: h.lng },
-          map: mapRef.current!,
-          title: h.name,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: selected[h.id] ? "#0ea5e9" : "#ef4444",
-            fillOpacity: 0.9,
-            strokeColor: "#ffffff",
-            strokeWeight: 2,
-          },
-        }),
-    );
-  }, [hospitals, selected]);
+    markersRef.current = hospitals.map((h) => {
+      const isSel = h.id === selectedId;
+      const marker = new google.maps.Marker({
+        position: { lat: h.lat, lng: h.lng },
+        map: mapRef.current!,
+        title: h.name,
+        zIndex: isSel ? 999 : 1,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: isSel ? 11 : 8,
+          fillColor: isSel ? "#0ea5e9" : "#ef4444",
+          fillOpacity: 0.95,
+          strokeColor: "#ffffff",
+          strokeWeight: 2,
+        },
+      });
+      marker.addListener("click", () => onSelect(h));
+      return marker;
+    });
+  }, [hospitals, selectedId, onSelect]);
 
-  // Center map on selected center
   useEffect(() => {
     if (!mapRef.current || !center) return;
     mapRef.current.panTo(center);
@@ -114,7 +124,7 @@ export function HospitalFinder() {
   async function runSearch(loc: { lat: number; lng: number }) {
     setLoading(true);
     setHospitals([]);
-    setSelected({});
+    onSelect(null);
     try {
       const result = await search({ data: { lat: loc.lat, lng: loc.lng, radiusMeters: 5000 } });
       setHospitals(result);
@@ -163,33 +173,13 @@ export function HospitalFinder() {
     );
   }
 
-  const totals = useMemo(() => {
-    const chosen = hospitals.filter((h) => selected[h.id]);
-    const beds = chosen.reduce((sum, h) => sum + estimateBeds(h.id), 0);
-    return { count: chosen.length, beds };
-  }, [hospitals, selected]);
-
   return (
     <section className="mx-auto max-w-7xl px-6 pt-8">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Find hospitals near you</h2>
-          <p className="text-sm text-muted-foreground">
-            Search a city or use your location to discover real nearby hospitals, their types, and
-            estimated bed capacity.
-          </p>
-        </div>
-        {totals.count > 0 && (
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm">
-            <BedDouble className="h-4 w-4 text-primary" />
-            <span className="font-semibold">{totals.beds.toLocaleString()}</span>
-            <span className="text-muted-foreground">beds selected across</span>
-            <span className="font-semibold">{totals.count}</span>
-            <span className="text-muted-foreground">
-              {totals.count === 1 ? "hospital" : "hospitals"}
-            </span>
-          </div>
-        )}
+      <div className="mb-4">
+        <h2 className="text-2xl font-semibold tracking-tight">Find hospitals near you</h2>
+        <p className="text-sm text-muted-foreground">
+          Search a city or use your location. Tap a hospital to view its real-time bed grid.
+        </p>
       </div>
 
       <form onSubmit={handleSearch} className="mb-4 flex flex-wrap gap-2">
@@ -246,46 +236,45 @@ export function HospitalFinder() {
           )}
           {hospitals.map((h) => {
             const beds = estimateBeds(h.id);
-            const isSel = !!selected[h.id];
+            const isSel = h.id === selectedId;
             return (
-              <Card
+              <button
                 key={h.id}
-                className={`flex gap-3 p-3 transition-colors ${
-                  isSel ? "border-primary bg-primary/5" : ""
-                }`}
+                type="button"
+                onClick={() => onSelect(isSel ? null : h)}
+                className={`text-left transition-colors ${isSel ? "" : ""}`}
               >
-                <Checkbox
-                  checked={isSel}
-                  onCheckedChange={(c) =>
-                    setSelected((p) => ({ ...p, [h.id]: c === true }))
-                  }
-                  className="mt-1"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="truncate font-semibold">{h.name}</h3>
-                    {h.rating != null && (
-                      <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        {h.rating.toFixed(1)}
-                        {h.userRatingCount ? ` (${h.userRatingCount})` : ""}
-                      </span>
-                    )}
-                  </div>
-                  <p className="truncate text-xs text-muted-foreground">{h.address}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    {prettyTypes(h.types).map((t) => (
-                      <Badge key={t} variant="secondary" className="text-[10px]">
-                        {t}
+                <Card
+                  className={`flex gap-3 p-3 transition-colors ${
+                    isSel ? "border-primary bg-primary/5 ring-1 ring-primary/30" : ""
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="truncate font-semibold">{h.name}</h3>
+                      {h.rating != null && (
+                        <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          {h.rating.toFixed(1)}
+                          {h.userRatingCount ? ` (${h.userRatingCount})` : ""}
+                        </span>
+                      )}
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">{h.address}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      {prettyTypes(h.types).map((t) => (
+                        <Badge key={t} variant="secondary" className="text-[10px]">
+                          {t}
+                        </Badge>
+                      ))}
+                      <Badge className="ml-auto gap-1 border border-primary/30 bg-primary/10 text-[10px] text-primary">
+                        <BedDouble className="h-3 w-3" />
+                        {beds} max beds
                       </Badge>
-                    ))}
-                    <Badge className="ml-auto gap-1 bg-primary/10 text-primary border border-primary/30 text-[10px]">
-                      <BedDouble className="h-3 w-3" />
-                      ~{beds} beds
-                    </Badge>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </button>
             );
           })}
         </div>
