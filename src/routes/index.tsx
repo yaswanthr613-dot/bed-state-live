@@ -212,11 +212,20 @@ function MediSync() {
         </div>
       </header>
 
+      <HospitalFinder />
+
       <main className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-muted-foreground">
-            Floor plan — tap any bay to cycle status
-          </h2>
+        <div className="mb-2">
+          <h2 className="text-2xl font-semibold tracking-tight">Live floor plan</h2>
+          <p className="text-sm text-muted-foreground">
+            Real-time bay statuses synced across every connected user. Tap a bay to cycle its
+            status.
+          </p>
+        </div>
+        <div className="mb-4 flex items-center justify-between pt-2">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Tap any bay to cycle status
+          </h3>
           <div className="flex gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500" /> Available
