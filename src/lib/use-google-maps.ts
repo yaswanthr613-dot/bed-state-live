@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 import { useEffect, useState } from "react";
 
 const SCRIPT_ID = "google-maps-js";
