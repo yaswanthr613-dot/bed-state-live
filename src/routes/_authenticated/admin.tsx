@@ -123,15 +123,7 @@ function AdminPage() {
           </Card>
         )}
 
-        <div className="mt-3 grid gap-2 text-xs sm:flex">
-          <Input value={grantingEmail} onChange={(e) => setGrantingEmail(e.target.value)} />
-        </div>
       </main>
     </div>
   );
-}
-
-// Tiny inline shadow to avoid unused warning
-function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className="hidden" />;
 }
