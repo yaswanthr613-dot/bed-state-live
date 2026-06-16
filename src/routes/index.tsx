@@ -1,7 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Activity } from "lucide-react";
+import { Activity, LogIn, LogOut, History as HistoryIcon, ShieldAlert } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth, isStaffOrAdmin } from "@/lib/use-auth";
 import { HospitalFinder } from "@/components/HospitalFinder";
 import { HospitalBeds } from "@/components/HospitalBeds";
 import type { NearbyHospital } from "@/lib/hospitals.functions";
