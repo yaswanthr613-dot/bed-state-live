@@ -14,15 +14,64 @@ export type Database = {
   }
   public: {
     Tables: {
+      bed_events: {
+        Row: {
+          action: Database["public"]["Enums"]["bed_action"]
+          actor_display: string | null
+          actor_user_id: string | null
+          bed_id: string | null
+          bed_number: number | null
+          bed_type: string | null
+          created_at: string
+          hospital_name: string
+          id: string
+          place_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["bed_action"]
+          actor_display?: string | null
+          actor_user_id?: string | null
+          bed_id?: string | null
+          bed_number?: number | null
+          bed_type?: string | null
+          created_at?: string
+          hospital_name: string
+          id?: string
+          place_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["bed_action"]
+          actor_display?: string | null
+          actor_user_id?: string | null
+          bed_id?: string | null
+          bed_number?: number | null
+          bed_type?: string | null
+          created_at?: string
+          hospital_name?: string
+          id?: string
+          place_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bed_events_bed_id_fkey"
+            columns: ["bed_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_beds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hospital_beds: {
         Row: {
           bed_number: number
           bed_type: Database["public"]["Enums"]["bed_type"]
           hospital_name: string
           id: string
+          occupied_reason: string | null
           place_id: string
           reserved_at: string | null
           reserved_by: string | null
+          reserved_by_user: string | null
           status: Database["public"]["Enums"]["bed_status"]
           updated_at: string
         }
@@ -31,9 +80,11 @@ export type Database = {
           bed_type: Database["public"]["Enums"]["bed_type"]
           hospital_name: string
           id?: string
+          occupied_reason?: string | null
           place_id: string
           reserved_at?: string | null
           reserved_by?: string | null
+          reserved_by_user?: string | null
           status?: Database["public"]["Enums"]["bed_status"]
           updated_at?: string
         }
@@ -42,11 +93,79 @@ export type Database = {
           bed_type?: Database["public"]["Enums"]["bed_type"]
           hospital_name?: string
           id?: string
+          occupied_reason?: string | null
           place_id?: string
           reserved_at?: string | null
           reserved_by?: string | null
+          reserved_by_user?: string | null
           status?: Database["public"]["Enums"]["bed_status"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      hospital_state: {
+        Row: {
+          emergency_mode: boolean
+          hospital_name: string
+          place_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          emergency_mode?: boolean
+          hospital_name: string
+          place_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          emergency_mode?: boolean
+          hospital_name?: string
+          place_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -55,6 +174,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       release_my_bed: {
         Args: { _device_id: string }
         Returns: {
@@ -62,9 +188,33 @@ export type Database = {
           bed_type: Database["public"]["Enums"]["bed_type"]
           hospital_name: string
           id: string
+          occupied_reason: string | null
           place_id: string
           reserved_at: string | null
           reserved_by: string | null
+          reserved_by_user: string | null
+          status: Database["public"]["Enums"]["bed_status"]
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "hospital_beds"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      release_my_bed_user: {
+        Args: never
+        Returns: {
+          bed_number: number
+          bed_type: Database["public"]["Enums"]["bed_type"]
+          hospital_name: string
+          id: string
+          occupied_reason: string | null
+          place_id: string
+          reserved_at: string | null
+          reserved_by: string | null
+          reserved_by_user: string | null
           status: Database["public"]["Enums"]["bed_status"]
           updated_at: string
         }[]
@@ -82,9 +232,11 @@ export type Database = {
           bed_type: Database["public"]["Enums"]["bed_type"]
           hospital_name: string
           id: string
+          occupied_reason: string | null
           place_id: string
           reserved_at: string | null
           reserved_by: string | null
+          reserved_by_user: string | null
           status: Database["public"]["Enums"]["bed_status"]
           updated_at: string
         }
@@ -95,8 +247,79 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reserve_bed_for_user: {
+        Args: { _bed_id: string }
+        Returns: {
+          bed_number: number
+          bed_type: Database["public"]["Enums"]["bed_type"]
+          hospital_name: string
+          id: string
+          occupied_reason: string | null
+          place_id: string
+          reserved_at: string | null
+          reserved_by: string | null
+          reserved_by_user: string | null
+          status: Database["public"]["Enums"]["bed_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "hospital_beds"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_bed_status: {
+        Args: {
+          _bed_id: string
+          _status: Database["public"]["Enums"]["bed_status"]
+        }
+        Returns: {
+          bed_number: number
+          bed_type: Database["public"]["Enums"]["bed_type"]
+          hospital_name: string
+          id: string
+          occupied_reason: string | null
+          place_id: string
+          reserved_at: string | null
+          reserved_by: string | null
+          reserved_by_user: string | null
+          status: Database["public"]["Enums"]["bed_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "hospital_beds"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      toggle_emergency_mode: {
+        Args: { _hospital_name: string; _on: boolean; _place_id: string }
+        Returns: {
+          emergency_mode: boolean
+          hospital_name: string
+          place_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "hospital_state"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
+      app_role: "admin" | "staff" | "patient"
+      bed_action:
+        | "reserved"
+        | "released"
+        | "occupied"
+        | "available"
+        | "emergency_set"
+        | "emergency_clear"
       bed_status: "available" | "reserved" | "occupied"
       bed_type: "ICU" | "ER" | "WARD"
     }
@@ -226,6 +449,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "staff", "patient"],
+      bed_action: [
+        "reserved",
+        "released",
+        "occupied",
+        "available",
+        "emergency_set",
+        "emergency_clear",
+      ],
       bed_status: ["available", "reserved", "occupied"],
       bed_type: ["ICU", "ER", "WARD"],
     },
