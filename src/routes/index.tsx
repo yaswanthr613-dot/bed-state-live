@@ -1,7 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Activity } from "lucide-react";
+import { Activity, LogIn, LogOut, History as HistoryIcon, ShieldAlert } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth, isStaffOrAdmin } from "@/lib/use-auth";
 import { HospitalFinder } from "@/components/HospitalFinder";
 import { HospitalBeds } from "@/components/HospitalBeds";
 import type { NearbyHospital } from "@/lib/hospitals.functions";
@@ -27,6 +31,8 @@ export const Route = createFileRoute("/")({
 
 function MediSync() {
   const [focused, setFocused] = useState<NearbyHospital | null>(null);
+  const auth = useAuth();
+  const staff = isStaffOrAdmin(auth.roles);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -37,11 +43,34 @@ function MediSync() {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Activity className="h-5 w-5" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-semibold tracking-tight">MediSync</h1>
-            <p className="text-xs text-muted-foreground">
-              Real-time hospital bed tracker
-            </p>
+            <p className="text-xs text-muted-foreground">Real-time hospital bed tracker</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {auth.user ? (
+              <>
+                {staff && (
+                  <Badge variant="outline" className="gap-1">
+                    <ShieldAlert className="h-3 w-3" /> {auth.roles.join(", ")}
+                  </Badge>
+                )}
+                <Link to="/history">
+                  <Button size="sm" variant="ghost"><HistoryIcon className="mr-1 h-4 w-4" />History</Button>
+                </Link>
+                <Link to="/admin">
+                  <Button size="sm" variant="ghost">Admin</Button>
+                </Link>
+                <span className="hidden text-xs text-muted-foreground sm:inline">{auth.user.email}</span>
+                <Button size="sm" variant="outline" onClick={() => supabase.auth.signOut().then(() => window.location.reload())}>
+                  <LogOut className="mr-1 h-4 w-4" /> Sign out
+                </Button>
+              </>
+            ) : (
+              <Link to="/auth">
+                <Button size="sm"><LogIn className="mr-1 h-4 w-4" /> Sign in</Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
