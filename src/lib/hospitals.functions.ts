@@ -246,3 +246,112 @@ export const releaseMyBed = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- Authenticated server fns (Phase 1 backend) ----------
+
+export const reserveBedAsUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ bedId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase.rpc("reserve_bed_for_user", {
+      _bed_id: data.bedId,
+    });
+    if (error) {
+      if (error.message.includes("bed_unavailable")) return { ok: false as const, reason: "unavailable" as const };
+      if (error.message.includes("not_authenticated")) return { ok: false as const, reason: "auth" as const };
+      throw new Error(error.message);
+    }
+    return { ok: true as const, bed: row as unknown as Bed };
+  });
+
+export const releaseMyBedAsUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase.rpc("release_my_bed_user");
+    if (error && !error.message.includes("not_authenticated")) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const setBedOccupancy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      bedId: z.string().uuid(),
+      status: z.enum(["available", "occupied"]),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase.rpc("set_bed_status", {
+      _bed_id: data.bedId,
+      _status: data.status,
+    });
+    if (error) {
+      if (error.message.includes("forbidden")) return { ok: false as const, reason: "forbidden" as const };
+      throw new Error(error.message);
+    }
+    return { ok: true as const, bed: row as unknown as Bed };
+  });
+
+export const toggleEmergencyMode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      placeId: z.string().min(1),
+      hospitalName: z.string().min(1),
+      on: z.boolean(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase.rpc("toggle_emergency_mode", {
+      _place_id: data.placeId,
+      _hospital_name: data.hospitalName,
+      _on: data.on,
+    });
+    if (error) {
+      if (error.message.includes("forbidden")) return { ok: false as const, reason: "forbidden" as const };
+      throw new Error(error.message);
+    }
+    return { ok: true as const, state: row };
+  });
+
+export interface BedEvent {
+  id: string;
+  bed_id: string | null;
+  place_id: string;
+  hospital_name: string;
+  bed_number: number | null;
+  bed_type: string | null;
+  actor_user_id: string | null;
+  action: string;
+  created_at: string;
+}
+
+export const listBedEvents = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z.object({
+      placeId: z.string().optional(),
+      actorUserId: z.string().uuid().optional(),
+      limit: z.number().int().min(1).max(200).default(50),
+    }).parse(input),
+  )
+  .handler(async ({ data }): Promise<BedEvent[]> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let q = supabaseAdmin.from("bed_events").select("*").order("created_at", { ascending: false }).limit(data.limit);
+    if (data.placeId) q = q.eq("place_id", data.placeId);
+    if (data.actorUserId) q = q.eq("actor_user_id", data.actorUserId);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as BedEvent[];
+  });
+
+export const getHospitalState = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ placeId: z.string().min(1) }).parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("hospital_state")
+      .select("*")
+      .eq("place_id", data.placeId)
+      .maybeSingle();
+    return row;
+  });
