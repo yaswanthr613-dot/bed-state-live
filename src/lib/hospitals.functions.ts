@@ -134,6 +134,8 @@ export interface Bed {
   bed_type: "ICU" | "ER" | "WARD";
   status: "available" | "reserved" | "occupied";
   reserved_by: string | null;
+  reserved_by_user: string | null;
+  occupied_reason: string | null;
 }
 
 function hashStr(s: string, seed = 0): number {
