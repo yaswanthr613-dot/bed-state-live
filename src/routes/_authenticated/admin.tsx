@@ -21,7 +21,7 @@ function AdminPage() {
   const list = useServerFn(listBedEvents);
   const [events, setEvents] = useState<BedEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [grantingEmail, setGrantingEmail] = useState("");
+  
 
   useEffect(() => {
     list({ data: { limit: 100 } })
