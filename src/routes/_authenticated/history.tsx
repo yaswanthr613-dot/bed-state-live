@@ -11,7 +11,16 @@ import { Toaster } from "@/components/ui/sonner";
 import { Activity, ArrowLeft, History } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/history")({
-  head: () => ({ meta: [{ title: "Your reservation history — MediSync" }] }),
+  head: () => ({
+    meta: [
+      { title: "Your reservation history — MediSync" },
+      { name: "description", content: "Review your recent hospital bed reservations and releases." },
+      { property: "og:title", content: "Reservation history — MediSync" },
+      { property: "og:description", content: "Your recent hospital bed reservation activity." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: HistoryPage,
 });
 
