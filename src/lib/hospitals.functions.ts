@@ -1,8 +1,33 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_maps";
+
+function createPublicDatabaseClient(url: string, key: string) {
+  return createClient<Database>(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers);
+        if (key.startsWith("sb_") && headers.get("Authorization") === `Bearer ${key}`) {
+          headers.delete("Authorization");
+        }
+        headers.set("apikey", key);
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
+}
+
+function getPublicDatabaseConfig() {
+  const url = process.env["SUPABASE_URL"];
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+  if (!url || !key) throw new Error("Hospital data connection is not configured");
+  return { url, key };
+}
 
 function authHeaders() {
   const lovableKey = process.env.LOVABLE_API_KEY;
@@ -172,9 +197,10 @@ export const ensureHospitalBeds = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }): Promise<Bed[]> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { url, key } = getPublicDatabaseConfig();
+    const database = createPublicDatabaseClient(url, key);
 
-    const { data: existing, error: selErr } = await supabaseAdmin
+    const { data: existing, error: selErr } = await database
       .from("hospital_beds")
       .select("*")
       .eq("place_id", data.placeId)
@@ -206,11 +232,11 @@ export const ensureHospitalBeds = createServerFn({ method: "POST" })
     }
 
     if (toInsert.length > 0) {
-      const { error: insErr } = await supabaseAdmin.from("hospital_beds").insert(toInsert);
+      const { error: insErr } = await database.from("hospital_beds").insert(toInsert);
       if (insErr) throw new Error(insErr.message);
     }
 
-    const { data: full, error: finalErr } = await supabaseAdmin
+    const { data: full, error: finalErr } = await database
       .from("hospital_beds")
       .select("*")
       .eq("place_id", data.placeId)
@@ -335,8 +361,9 @@ export const listBedEvents = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data }): Promise<BedEvent[]> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let q = supabaseAdmin.from("bed_events").select("*").order("created_at", { ascending: false }).limit(data.limit);
+    const { url, key } = getPublicDatabaseConfig();
+    const database = createPublicDatabaseClient(url, key);
+    let q = database.from("bed_events").select("*").order("created_at", { ascending: false }).limit(data.limit);
     if (data.placeId) q = q.eq("place_id", data.placeId);
     if (data.actorUserId) q = q.eq("actor_user_id", data.actorUserId);
     const { data: rows, error } = await q;
@@ -347,11 +374,13 @@ export const listBedEvents = createServerFn({ method: "POST" })
 export const getHospitalState = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ placeId: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row } = await supabaseAdmin
+    const { url, key } = getPublicDatabaseConfig();
+    const database = createPublicDatabaseClient(url, key);
+    const { data: row, error } = await database
       .from("hospital_state")
       .select("*")
       .eq("place_id", data.placeId)
       .maybeSingle();
+    if (error) throw new Error(error.message);
     return row;
   });
