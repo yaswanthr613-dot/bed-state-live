@@ -12,7 +12,16 @@ import { Activity, ArrowLeft, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  head: () => ({ meta: [{ title: "Admin — MediSync" }] }),
+  head: () => ({
+    meta: [
+      { title: "Hospital operations — MediSync" },
+      { name: "description", content: "Review live hospital bed activity in MediSync operations." },
+      { property: "og:title", content: "Hospital operations — MediSync" },
+      { property: "og:description", content: "Live hospital bed activity for MediSync staff." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AdminPage,
 });
 

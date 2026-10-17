@@ -13,7 +13,16 @@ import { Activity, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Sign in — MediSync" }] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in — MediSync" },
+      { name: "description", content: "Sign in or create a MediSync account to reserve a hospital bed." },
+      { property: "og:title", content: "Sign in — MediSync" },
+      { property: "og:description", content: "Access your MediSync hospital bed reservations." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AuthPage,
 });
 
