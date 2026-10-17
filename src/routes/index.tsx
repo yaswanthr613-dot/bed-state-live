@@ -24,6 +24,8 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Live nearby-hospital bed map with one-bed-per-device reservation control.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: MediSync,
