@@ -22,13 +22,6 @@ function createPublicDatabaseClient(url: string, key: string) {
   });
 }
 
-function getPublicDatabaseConfig() {
-  const url = process.env["SUPABASE_URL"];
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
-  if (!url || !key) throw new Error("Hospital data connection is not configured");
-  return { url, key };
-}
-
 function authHeaders() {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const mapsKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -197,7 +190,9 @@ export const ensureHospitalBeds = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }): Promise<Bed[]> => {
-    const { url, key } = getPublicDatabaseConfig();
+    const url = process.env["SUPABASE_URL"];
+    const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+    if (!url || !key) throw new Error("Hospital data connection is not configured");
     const database = createPublicDatabaseClient(url, key);
 
     const { data: existing, error: selErr } = await database
@@ -361,7 +356,9 @@ export const listBedEvents = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data }): Promise<BedEvent[]> => {
-    const { url, key } = getPublicDatabaseConfig();
+    const url = process.env["SUPABASE_URL"];
+    const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+    if (!url || !key) throw new Error("Hospital data connection is not configured");
     const database = createPublicDatabaseClient(url, key);
     let q = database.from("bed_events").select("*").order("created_at", { ascending: false }).limit(data.limit);
     if (data.placeId) q = q.eq("place_id", data.placeId);
@@ -374,7 +371,9 @@ export const listBedEvents = createServerFn({ method: "POST" })
 export const getHospitalState = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ placeId: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
-    const { url, key } = getPublicDatabaseConfig();
+    const url = process.env["SUPABASE_URL"];
+    const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+    if (!url || !key) throw new Error("Hospital data connection is not configured");
     const database = createPublicDatabaseClient(url, key);
     const { data: row, error } = await database
       .from("hospital_state")
