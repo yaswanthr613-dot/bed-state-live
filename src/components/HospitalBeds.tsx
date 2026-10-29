@@ -253,7 +253,7 @@ export function HospitalBeds({ hospital }: { hospital: NearbyHospital }) {
 
   return (
     <section className="mx-auto max-w-7xl px-6 pb-12 pt-8">
-      <Card className={`p-5 ${emergencyOn ? "border-rose-500/60 ring-2 ring-rose-500/30" : ""}`}>
+      <Card className={`glass-strong rounded-3xl p-5 ${emergencyOn ? "border-rose-500/60 ring-2 ring-rose-500/30" : ""}`}>
         {emergencyOn && (
           <div className="mb-4 flex items-center gap-2 rounded-md bg-rose-500/15 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
             <AlertTriangle className="h-4 w-4" />
