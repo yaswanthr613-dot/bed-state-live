@@ -450,6 +450,7 @@ export const getHospitalDetails = createServerFn({ method: "POST" })
       googleMapsUri?: string;
       location?: { latitude: number; longitude: number };
       photos?: Array<{ name: string; authorAttributions?: Array<{ displayName?: string }> }>;
+      types?: string[];
       editorialSummary?: { text?: string };
     };
 
