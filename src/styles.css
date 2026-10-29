@@ -49,49 +49,53 @@
 }
 
 :root {
-  --radius: 1rem;
-  /* Deep abyssal navy — cool blue-slate base */
-  --background: oklch(0.17 0.035 258);
-  --foreground: oklch(0.94 0.015 230);
-  /* Slightly lifted translucent-looking card tone */
-  --card: oklch(0.215 0.04 260);
-  --card-foreground: oklch(0.94 0.015 230);
-  --popover: oklch(0.215 0.04 260);
-  --popover-foreground: oklch(0.94 0.015 230);
-  /* Cyan/aqua glow as the primary brand color */
-  --primary: oklch(0.82 0.135 195);
-  --primary-foreground: oklch(0.18 0.045 252);
-  --secondary: oklch(0.28 0.045 262);
-  --secondary-foreground: oklch(0.92 0.02 232);
-  --muted: oklch(0.27 0.04 260);
-  --muted-foreground: oklch(0.68 0.032 248);
-  /* Violet secondary glow used sparingly */
-  --accent: oklch(0.32 0.06 285);
-  --accent-foreground: oklch(0.94 0.015 230);
-  --destructive: oklch(0.63 0.19 25);
+  --radius: 1.125rem;
+  --background: oklch(0.16 0.035 259);
+  --foreground: oklch(0.95 0.012 235);
+  --card: oklch(0.22 0.038 258);
+  --card-foreground: oklch(0.95 0.012 235);
+  --popover: oklch(0.23 0.04 258);
+  --popover-foreground: oklch(0.95 0.012 235);
+  --primary: oklch(0.79 0.13 190);
+  --primary-foreground: oklch(0.19 0.04 257);
+  --secondary: oklch(0.29 0.045 260);
+  --secondary-foreground: oklch(0.93 0.018 235);
+  --muted: oklch(0.27 0.04 258);
+  --muted-foreground: oklch(0.72 0.03 245);
+  --accent: oklch(0.34 0.075 287);
+  --accent-foreground: oklch(0.96 0.012 235);
+  --destructive: oklch(0.65 0.2 25);
   --destructive-foreground: oklch(0.98 0.005 250);
-  --border: oklch(0.94 0.02 235 / 12%);
-  --input: oklch(0.94 0.02 235 / 14%);
-  --ring: oklch(0.82 0.135 195 / 55%);
-  --chart-1: oklch(0.82 0.135 195);
-  --chart-2: oklch(0.65 0.18 285);
-  --chart-3: oklch(0.7 0.15 150);
-  --chart-4: oklch(0.8 0.14 85);
-  --chart-5: oklch(0.65 0.2 25);
+  --border: oklch(0.93 0.025 235 / 13%);
+  --input: oklch(0.93 0.025 235 / 16%);
+  --ring: oklch(0.79 0.13 190 / 62%);
+  --chart-1: oklch(0.78 0.13 190);
+  --chart-2: oklch(0.69 0.18 285);
+  --chart-3: oklch(0.75 0.16 151);
+  --chart-4: oklch(0.82 0.16 82);
+  --chart-5: oklch(0.67 0.21 25);
 }
 
 @utility glass {
-  background: color-mix(in oklab, var(--card) 52%, transparent);
-  backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid color-mix(in oklab, var(--foreground) 10%, transparent);
-  box-shadow: 0 8px 32px -12px oklch(0.1 0.03 258 / 60%);
+  background: linear-gradient(
+    145deg,
+    color-mix(in oklab, var(--card) 78%, transparent),
+    color-mix(in oklab, var(--card) 48%, transparent)
+  );
+  backdrop-filter: blur(22px) saturate(165%);
+  border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--foreground) 7%, transparent),
+    0 12px 36px -16px oklch(0.08 0.03 258 / 75%);
 }
 
 @utility glass-strong {
-  background: color-mix(in oklab, var(--card) 72%, transparent);
-  backdrop-filter: blur(28px) saturate(170%);
-  border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
-  box-shadow: 0 16px 48px -16px oklch(0.08 0.03 258 / 70%);
+  background: color-mix(in oklab, var(--card) 84%, transparent);
+  backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid color-mix(in oklab, var(--foreground) 15%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent),
+    0 18px 52px -20px oklch(0.08 0.03 258 / 78%);
 }
 
 @utility glass-ring {
@@ -107,15 +111,34 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    /* Cool aurora glow: cyan top-left, violet top-right, teal bottom */
     background-image:
-      radial-gradient(1100px 560px at 12% -8%, color-mix(in oklab, var(--primary) 14%, transparent), transparent 62%),
-      radial-gradient(900px 500px at 92% -4%, oklch(0.5 0.17 288 / 13%), transparent 60%),
-      radial-gradient(1000px 640px at 50% 112%, oklch(0.5 0.13 190 / 10%), transparent 62%);
+      radial-gradient(
+        1000px 560px at 10% -8%,
+        color-mix(in oklab, var(--primary) 17%, transparent),
+        transparent 64%
+      ),
+      radial-gradient(900px 560px at 92% 8%, oklch(0.48 0.16 291 / 18%), transparent 62%),
+      radial-gradient(950px 620px at 52% 108%, oklch(0.48 0.13 220 / 13%), transparent 64%);
     background-attachment: fixed;
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--primary) 78%, white);
+    outline-offset: 3px;
   }
 
   ::selection {
     background: color-mix(in oklab, var(--primary) 35%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
