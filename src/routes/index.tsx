@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, isStaffOrAdmin } from "@/lib/use-auth";
 import { HospitalFinder } from "@/components/HospitalFinder";
+import { HospitalDetails } from "@/components/HospitalDetails";
 import { HospitalBeds } from "@/components/HospitalBeds";
 import type { NearbyHospital } from "@/lib/hospitals.functions";
 
@@ -40,7 +41,7 @@ function MediSync() {
     <div className="min-h-screen bg-background text-foreground">
       <Toaster position="top-right" richColors />
 
-      <header className="border-b border-border bg-card/40 backdrop-blur">
+      <header className="glass-strong sticky top-0 z-20 border-b border-border/60">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-5">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Activity className="h-5 w-5" />
@@ -79,6 +80,7 @@ function MediSync() {
 
       <HospitalFinder selectedId={focused?.id ?? null} onSelect={setFocused} />
 
+      {focused && <HospitalDetails hospital={focused} />}
       {focused && <HospitalBeds hospital={focused} />}
     </div>
   );
