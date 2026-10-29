@@ -383,3 +383,112 @@ export const getHospitalState = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return row;
   });
+
+// ---------- Google-Maps-style hospital details (Places API New) ----------
+
+export interface HospitalDetails {
+  id: string;
+  name: string;
+  address: string;
+  phone?: string;
+  website?: string;
+  rating?: number;
+  userRatingCount?: number;
+  openNow?: boolean | null;
+  hours?: string[];
+  businessStatus?: string;
+  mapsUri?: string;
+  photoUri?: string;
+  photoAttribution?: string;
+  lat: number;
+  lng: number;
+  types: string[];
+  editorial?: string;
+}
+
+export const getHospitalDetails = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ placeId: z.string().min(1).max(200) }).parse(input))
+  .handler(async ({ data }): Promise<HospitalDetails> => {
+    const res = await fetch(
+      `${GATEWAY_URL}/places/v1/places/${encodeURIComponent(data.placeId)}`,
+      {
+        headers: {
+          ...authHeaders(),
+          "X-Goog-FieldMask":
+            "id,displayName,formattedAddress,nationalPhoneNumber,websiteUri,rating,userRatingCount,regularOpeningHours,currentOpeningHours.openNow,businessStatus,types,googleMapsUri,location,photos,editorialSummary",
+        },
+      },
+    );
+
+    if (res.status === 403) {
+      const details: Array<{ reason?: string }> = ((await res.json())?.error?.details ?? []) as Array<{ reason?: string }>;
+      const reason = details.find((d) => d.reason)?.reason;
+      if (reason === "API_KEY_HTTP_REFERRER_BLOCKED") {
+        throw new Error("Google Maps server key is referrer-restricted. Set its application restrictions to None or IP addresses in Google Cloud Console.");
+      }
+      if (reason === "API_KEY_SERVICE_BLOCKED") {
+        throw new Error("Google Maps server key does not allow Places API. Add Places API (New) to the server key's allowed APIs in Google Cloud Console.");
+      }
+      throw new Error(`Places API error 403: Google Maps request denied`);
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Places API error ${res.status}: ${text}`);
+    }
+
+    const p = (await res.json()) as {
+      id: string;
+      displayName?: { text?: string };
+      formattedAddress?: string;
+      nationalPhoneNumber?: string;
+      websiteUri?: string;
+      rating?: number;
+      userRatingCount?: number;
+      regularOpeningHours?: { weekdayDescriptions?: string[] };
+      currentOpeningHours?: { openNow?: boolean };
+      businessStatus?: string;
+      googleMapsUri?: string;
+      location?: { latitude: number; longitude: number };
+      photos?: Array<{ name: string; authorAttributions?: Array<{ displayName?: string }> }>;
+      editorialSummary?: { text?: string };
+    };
+
+    let photoUri: string | undefined;
+    let photoAttribution: string | undefined;
+    const photo = p.photos?.[0];
+    if (photo?.name) {
+      try {
+        const mres = await fetch(
+          `${GATEWAY_URL}/places/v1/${photo.name}/media?maxWidthPx=1200&skipHttpRedirect=true`,
+          { headers: authHeaders() },
+        );
+        if (mres.ok) {
+          const mj = (await mres.json()) as { photoUri?: string };
+          photoUri = mj.photoUri;
+          photoAttribution = photo.authorAttributions?.[0]?.displayName;
+        }
+      } catch {
+        // Photo is optional — details still render without it.
+      }
+    }
+
+    return {
+      id: p.id,
+      name: p.displayName?.text ?? "Unknown hospital",
+      address: p.formattedAddress ?? "",
+      phone: p.nationalPhoneNumber,
+      website: p.websiteUri,
+      rating: p.rating,
+      userRatingCount: p.userRatingCount,
+      openNow: p.currentOpeningHours?.openNow ?? null,
+      hours: p.regularOpeningHours?.weekdayDescriptions,
+      businessStatus: p.businessStatus,
+      mapsUri: p.googleMapsUri,
+      photoUri,
+      photoAttribution,
+      lat: p.location?.latitude ?? 0,
+      lng: p.location?.longitude ?? 0,
+      types: p.types ?? [],
+      editorial: p.editorialSummary?.text,
+    };
+  });
