@@ -36,7 +36,12 @@ function loadGoogleMaps(): Promise<typeof google> {
     s.async = true;
     s.defer = true;
     s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&loading=async&callback=__initGoogleMaps${channel ? `&channel=${channel}` : ""}`;
-    s.onerror = () => reject(new Error("Failed to load Google Maps script"));
+    s.onerror = () => {
+      // Allow a later attempt to re-inject the script instead of being stuck
+      // with a permanently rejected promise after a transient network failure.
+      loadPromise = null;
+      reject(new Error("Failed to load Google Maps script"));
+    };
     document.head.appendChild(s);
   });
   return loadPromise;
@@ -49,15 +54,25 @@ export function useGoogleMaps() {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    loadGoogleMaps()
-      .then(() => {
-        if (!cancelled) setReady(true);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e.message ?? "Failed to load map");
-      });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const attempt = (retriesLeft: number) => {
+      loadGoogleMaps()
+        .then(() => {
+          if (!cancelled) setReady(true);
+        })
+        .catch((e) => {
+          if (cancelled) return;
+          if (retriesLeft > 0) {
+            timer = setTimeout(() => attempt(retriesLeft - 1), 3000);
+          } else {
+            setError(e.message ?? "Failed to load map");
+          }
+        });
+    };
+    attempt(2);
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
     };
   }, []);
   return { ready, error };
